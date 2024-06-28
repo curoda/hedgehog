@@ -19,6 +19,7 @@
         #gameCanvas {
             border: 1px solid black;
             background-color: #87CEEB;
+            cursor: move;
         }
         #score {
             font-family: Arial, sans-serif;
@@ -41,17 +42,18 @@
         const GAME_HEIGHT = 400;
         const PLAYER_SIZE = 50;
         const OBSTACLE_WIDTH = 60;
-        const OBSTACLE_GAP = 200;
-        const SCROLL_SPEED = 2;
+        const OBSTACLE_GAP = 250; // Increased gap for easier gameplay
+        const SCROLL_SPEED = 1.5; // Reduced speed for easier gameplay
 
         let playerY = GAME_HEIGHT / 2;
         let obstacles = [];
         let score = 0;
         let gameOver = false;
+        let isDragging = false;
 
         // Load the hedgehog image
         const hedgehogImg = new Image();
-        hedgehogImg.src = 'hedgehog.png'; // Placeholder image
+        hedgehogImg.src = '/api/placeholder/50/50'; // Placeholder image
 
         function drawPlayer() {
             if (hedgehogImg.complete) {
@@ -111,13 +113,11 @@
             obstacles.forEach(obstacle => obstacle.x -= SCROLL_SPEED);
 
             if (obstacles.length === 0 || obstacles[obstacles.length - 1].x < GAME_WIDTH - OBSTACLE_GAP) {
-                obstacles.push({
-                    x: GAME_WIDTH,
-                    height: Math.random() * (GAME_HEIGHT - 150) + 50
+                obstacles.push(                    x: GAME_WIDTH,
+                    height: Math.random() * (GAME_HEIGHT - 200) + 50 // Increased minimum gap
                 });
             }
-        }
-
+  
         function checkCollision() {
             return obstacles.some(obstacle => 
                 obstacle.x < PLAYER_SIZE &&
@@ -132,8 +132,7 @@
             ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
             
             drawPlayer();
-            drawObstacles();
-            updateObstacles();
+                  updateObstacles();
 
             if (checkCollision()) {
                 gameOver = true;
@@ -147,26 +146,30 @@
             requestAnimationFrame(gameLoop);
         }
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                e.preventDefault(); // Prevent default scrolling behavior
-                if (e.key === 'ArrowUp' && playerY > 0) {
-                    playerY = Math.max(playerY - 10, 0);
-                } else if (e.key === 'ArrowDown' && playerY < GAME_HEIGHT - PLAYER_SIZE) {
-                    playerY = Math.min(playerY + 10, GAME_HEIGHT - PLAYER_SIZE);
-                }
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBounding            const mouseY = e.clientY - rect.top;
+            if (mouseY >= playerY && mouseY <= playerY + PLAYER_SIZE) {
+                isDragging = true;
             }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const rect = canvas.getBoundingClientRect();
+                playerY = e.clientY - rect.top - PLAYER_SIZE / 2;
+                playerY = Math.max(0, Math.min            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            isDragging = false;
         });
 
         hedgehogImg.onload = gameLoop;
         hedgehogImg.onerror = gameLoop; // Start the game even if the image fails to load
-
-        // Prevent arrow key scrolling for the entire page
-        window.addEventListener("keydown", function(e) {
-            if([32, 37, 38, 39, 40].indexOf(e.keyCode) > -1) {
-                e.preventDefault();
-            }
-        }, false);
     </script>
 </body>
 </html>
