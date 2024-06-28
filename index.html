@@ -146,7 +146,8 @@
             updateObstacles();
 
             if (checkCollision()) {
-                gameOve                alert(`Game Over! Your score: ${score}`);
+                gameOver = true;
+                alert(`Game Over! Your score: ${score}`);
                 return;
             }
 
@@ -157,7 +158,8 @@
         }
 
         canvas.addEventListener('mousedown', (e) => {
-            const rect = canvas            const mouseY = e.clientY - rect.top;
+            const rect = canvas.getBoundingClientRect();
+            const mouseY = e.clientY - rect.top;
             if (mouseY >= playerY && mouseY <= playerY + PLAYER_SIZE) {
                 isDragging = true;
             }
@@ -166,7 +168,8 @@
         canvas.addEventListener('mousemove', (e) => {
             if (isDragging) {
                 const rect = canvas.getBoundingClientRect();
-                    playerY = Math.max(0, Math.min(playerY, GAME_HEIGHT - PLAYER_SIZE));
+                playerY = e.clientY - rect.top - PLAYER_SIZE / 2;
+                playerY = Math.max(0, Math.min(playerY, GAME_HEIGHT - PLAYER_SIZE));
             }
         });
 
@@ -174,7 +177,8 @@
             isDragging = false;
         });
 
-        canvas.addEventListener('mouseleave', () =>            isDragging = false;
+        canvas.addEventListener('mouseleave', () => {
+            isDragging = false;
         });
 
         function startGame() {
@@ -190,12 +194,14 @@
             startGame();
         };
         hedgehogImg.onerror = () => {
-                       startGame(); // Start the game even if the image fails to load
+            debug("Error loading hedgehog image");
+            startGame(); // Start the game even if the image fails to load
         };
 
         // Fallback to start the game if neither onload nor onerror triggers
         setTimeout(() => {
-                    debug("Starting game after timeout");
+            if (obstacles.length === 0) {
+                debug("Starting game after timeout");
                 startGame();
             }
         }, 1000);
