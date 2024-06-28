@@ -2,35 +2,48 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Hedgehog Scrolling 2D Game</title>
     <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+        body, html {
             margin: 0;
-            background-color: #f0f0f0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
         }
         #gameContainer {
-            text-align: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f0f0;
         }
         #gameCanvas {
             border: 1px solid black;
             background-color: #87CEEB;
-            cursor: move;
+            touch-action: none;
         }
         #score {
             font-family: Arial, sans-serif;
             font-size: 18px;
             margin-top: 10px;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            text-shadow: 1px 1px 2px black;
         }
     </style>
 </head>
 <body>
     <div id="gameContainer">
-        <canvas id="gameCanvas" width="600" height="400"></canvas>
+        <canvas id="gameCanvas"></canvas>
         <div id="score">Score: 0</div>
     </div>
     <script>
@@ -38,8 +51,8 @@
         const ctx = canvas.getContext('2d');
         const scoreElement = document.getElementById('score');
 
-        const GAME_WIDTH = 600;
-        const GAME_HEIGHT = 400;
+        let GAME_WIDTH = 800;
+        let GAME_HEIGHT = 450;
         const PLAYER_SIZE = 50;
         const OBSTACLE_WIDTH = 60;
         const OBSTACLE_GAP = 250;
@@ -49,12 +62,28 @@
         let obstacles = [];
         let score = 0;
         let gameOver = false;
-        let isDragging = false;
         let scrollSpeed = INITIAL_SCROLL_SPEED;
 
         // Load the hedgehog image
         const hedgehogImg = new Image();
-        hedgehogImg.src = 'hedgehog.png'; // Use the hedgehog.png image
+        hedgehogImg.src = 'hedgehog.png';
+
+        function resizeGame() {
+            const containerWidth = window.innerWidth;
+            const containerHeight = window.innerHeight;
+            const aspectRatio = GAME_WIDTH / GAME_HEIGHT;
+
+            if (containerWidth / containerHeight > aspectRatio) {
+                GAME_HEIGHT = containerHeight;
+                GAME_WIDTH = GAME_HEIGHT * aspectRatio;
+            } else {
+                GAME_WIDTH = containerWidth;
+                GAME_HEIGHT = GAME_WIDTH / aspectRatio;
+            }
+
+            canvas.width = GAME_WIDTH;
+            canvas.height = GAME_HEIGHT;
+        }
 
         function drawPlayer() {
             if (hedgehogImg.complete) {
@@ -93,7 +122,6 @@
             ctx.fillStyle = createGradient(x, y, width, height);
             drawRoundedRect(x, y, width, height, 10);
 
-            // Add some texture
             ctx.fillStyle = 'rgba(255,255,255,0.1)';
             for (let i = 0; i < 20; i++) {
                 ctx.beginPath();
@@ -130,7 +158,6 @@
         }
 
         function updateSpeed() {
-            // Increase speed for every 1000 points
             scrollSpeed = INITIAL_SCROLL_SPEED + Math.floor(score / 1000) * 0.5;
         }
 
@@ -156,34 +183,31 @@
             requestAnimationFrame(gameLoop);
         }
 
-        canvas.addEventListener('mousedown', (e) => {
+        function handleTouch(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
             const rect = canvas.getBoundingClientRect();
-            const mouseY = e.clientY - rect.top;
-            if (mouseY >= playerY && mouseY <= playerY + PLAYER_SIZE) {
-                isDragging = true;
-            }
-        });
+            const ratio = GAME_HEIGHT / rect.height;
+            const touchY = (touch.clientY - rect.top) * ratio;
+            playerY = touchY - PLAYER_SIZE / 2;
+            playerY = Math.max(0, Math.min(playerY, GAME_HEIGHT - PLAYER_SIZE));
+        }
 
-        canvas.addEventListener('mousemove', (e) => {
-            if (isDragging) {
-                const rect = canvas.getBoundingClientRect();
-                playerY = e.clientY - rect.top - PLAYER_SIZE / 2;
-                playerY = Math.max(0, Math.min(playerY, GAME_HEIGHT - PLAYER_SIZE));
-            }
-        });
+        canvas.addEventListener('touchstart', handleTouch);
+        canvas.addEventListener('touchmove', handleTouch);
 
-        canvas.addEventListener('mouseup', () => {
-            isDragging = false;
-        });
+        window.addEventListener('resize', resizeGame);
+        window.addEventListener('orientationchange', resizeGame);
 
-        canvas.addEventListener('mouseleave', () => {
-            isDragging = false;
-        });
+        function startGame() {
+            resizeGame();
+            gameLoop();
+        }
 
-        hedgehogImg.onload = gameLoop;
+        hedgehogImg.onload = startGame;
         hedgehogImg.onerror = () => {
             console.error("Error loading hedgehog image");
-            gameLoop(); // Start the game even if the image fails to load
+            startGame();
         };
     </script>
 </body>
