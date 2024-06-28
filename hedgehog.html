@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hedgehog Scrolling 2D Game</title>
+    <style>
+        #gameCanvas {
+            border: 1px solid black;
+            background-color: #87CEEB;
+        }
+        #debugInfo {
+            font-family: monospace;
+            white-space: pre;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    <div id="score">Score: 0</div>
+    <div id="debugInfo"></div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const debugElement = document.getElementById('debugInfo');
+
+        const GAME_WIDTH = 600;
+        const GAME_HEIGHT = 400;
+        const PLAYER_SIZE = 50;
+        const OBSTACLE_WIDTH = 60;
+        const OBSTACLE_GAP = 200;
+        const SCROLL_SPEED = 2;
+
+        let playerY = GAME_HEIGHT / 2;
+        let obstacles = [];
+        let score = 0;
+        let gameOver = false;
+        let debugInfo = '';
+
+        // Load the hedgehog image
+        const hedgehogImg = new Image();
+        hedgehogImg.src = '/api/placeholder/50/50'; // Placeholder image
+        
+        function updateDebugInfo(info) {
+            debugInfo += info + '\n';
+            debugElement.textContent = debugInfo;
+        }
+
+        function drawPlayer() {
+            if (hedgehogImg.complete) {
+                ctx.drawImage(hedgehogImg, 0, playerY, PLAYER_SIZE, PLAYER_SIZE);
+            } else {
+                ctx.fillStyle = 'red';
+                ctx.fillRect(0, playerY, PLAYER_SIZE, PLAYER_SIZE);
+            }
+        }
+
+        function createGradient(x, y, width, height) {
+            const gradient = ctx.createLinearGradient(x, y, x + width, y);
+            gradient.addColorStop(0, '#228B22');
+            gradient.addColorStop(0.3, '#32CD32');
+            gradient.addColorStop(0.6, '#006400');
+            gradient.addColorStop(1, '#008000');
+            return gradient;
+        }
+
+        function drawRoundedRect(x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawHedge(x, y, width, height) {
+            ctx.fillStyle = createGradient(x, y, width, height);
+            drawRoundedRect(x, y, width, height, 10);
+
+            // Add some texture
+            ctx.fillStyle = 'rgba(255,255,255,0.1)';
+            for (let i = 0; i < 20; i++) {
+                ctx.beginPath();
+                ctx.arc(x + Math.random() * width, y + Math.random() * height, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawObstacles() {
+            obstacles.forEach(obstacle => {
+                drawHedge(obstacle.x, 0, OBSTACLE_WIDTH, obstacle.height);
+                drawHedge(obstacle.x, obstacle.height + 100, OBSTACLE_WIDTH, GAME_HEIGHT - obstacle.height - 100);
+            });
+        }
+
+        function updateObstacles() {
+            obstacles = obstacles.filter(obstacle => obstacle.x + OBSTACLE_WIDTH > 0);
+            obstacles.forEach(obstacle => obstacle.x -= SCROLL_SPEED);
+
+            if (obstacles.length === 0 || obstacles[obstacles.length - 1].x < GAME_WIDTH - OBSTACLE_GAP) {
+                obstacles.push({
+                    x: GAME_WIDTH,
+                    height: Math.random() * (GAME_HEIGHT - 150) + 50
+                });
+            }
+        }
+
+        function checkCollision() {
+            return obstacles.some(obstacle => 
+                obstacle.x < PLAYER_SIZE &&
+                obstacle.x + OBSTACLE_WIDTH > 0 &&
+                (playerY < obstacle.height || playerY + PLAYER_SIZE > obstacle.height + 100)
+            );
+        }
+
+        function gameLoop() {
+            updateDebugInfo('Game loop running');
+            
+            if (gameOver) return;
+
+            ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+            
+            drawPlayer();
+            drawObstacles();
+            updateObstacles();
+
+            if (checkCollision()) {
+                gameOver = true;
+                alert(`Game Over! Your score: ${score}`);
+                return;
+            }
+
+            score++;
+            scoreElement.textContent = `Score: ${score}`;
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp' && playerY > 0) {
+                playerY = Math.max(playerY - 10, 0);
+            } else if (e.key === 'ArrowDown' && playerY < GAME_HEIGHT - PLAYER_SIZE) {
+                playerY = Math.min(playerY + 10, GAME_HEIGHT - PLAYER_SIZE);
+            }
+        });
+
+        hedgehogImg.onload = () => {
+            updateDebugInfo('Hedgehog image loaded');
+            gameLoop();
+        };
+
+        hedgehogImg.onerror = () => {
+            updateDebugInfo('Error loading hedgehog image');
+            gameLoop(); // Start the game anyway
+        };
+
+        updateDebugInfo('Script loaded');
+    </script>
+</body>
+</html>
