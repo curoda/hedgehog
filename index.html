@@ -21,7 +21,7 @@
             background-color: #87CEEB;
             cursor: move;
         }
-        #score {
+        #score, #debug {
             font-family: Arial, sans-serif;
             font-size: 18px;
             margin-top: 10px;
@@ -32,18 +32,20 @@
     <div id="gameContainer">
         <canvas id="gameCanvas" width="600" height="400"></canvas>
         <div id="score">Score: 0</div>
+        <div id="debug">Debug: Game not started</div>
     </div>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreElement = document.getElementById('score');
+        const debugElement = document.getElementById('debug');
 
         const GAME_WIDTH = 600;
         const GAME_HEIGHT = 400;
         const PLAYER_SIZE = 50;
         const OBSTACLE_WIDTH = 60;
-        const OBSTACLE_GAP = 250; // Increased gap for easier gameplay
-        const SCROLL_SPEED = 1.5; // Reduced speed for easier gameplay
+        const OBSTACLE_GAP = 250;
+        const SCROLL_SPEED = 1.5;
 
         let playerY = GAME_HEIGHT / 2;
         let obstacles = [];
@@ -54,6 +56,11 @@
         // Load the hedgehog image
         const hedgehogImg = new Image();
         hedgehogImg.src = '/api/placeholder/50/50'; // Placeholder image
+
+        function debug(message) {
+            console.log(message);
+            debugElement.textContent = "Debug: " + message;
+        }
 
         function drawPlayer() {
             if (hedgehogImg.complete) {
@@ -113,11 +120,13 @@
             obstacles.forEach(obstacle => obstacle.x -= SCROLL_SPEED);
 
             if (obstacles.length === 0 || obstacles[obstacles.length - 1].x < GAME_WIDTH - OBSTACLE_GAP) {
-                obstacles.push(                    x: GAME_WIDTH,
-                    height: Math.random() * (GAME_HEIGHT - 200) + 50 // Increased minimum gap
+                obstacles.push({
+                    x: GAME_WIDTH,
+                    height: Math.random() * (GAME_HEIGHT - 200) + 50
                 });
             }
-  
+        }
+
         function checkCollision() {
             return obstacles.some(obstacle => 
                 obstacle.x < PLAYER_SIZE &&
@@ -127,16 +136,17 @@
         }
 
         function gameLoop() {
+            debug("Game loop running");
             if (gameOver) return;
 
             ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
             
             drawPlayer();
-                  updateObstacles();
+            drawObstacles();
+            updateObstacles();
 
             if (checkCollision()) {
-                gameOver = true;
-                alert(`Game Over! Your score: ${score}`);
+                gameOve                alert(`Game Over! Your score: ${score}`);
                 return;
             }
 
@@ -147,7 +157,7 @@
         }
 
         canvas.addEventListener('mousedown', (e) => {
-            const rect = canvas.getBounding            const mouseY = e.clientY - rect.top;
+            const rect = canvas            const mouseY = e.clientY - rect.top;
             if (mouseY >= playerY && mouseY <= playerY + PLAYER_SIZE) {
                 isDragging = true;
             }
@@ -156,20 +166,41 @@
         canvas.addEventListener('mousemove', (e) => {
             if (isDragging) {
                 const rect = canvas.getBoundingClientRect();
-                playerY = e.clientY - rect.top - PLAYER_SIZE / 2;
-                playerY = Math.max(0, Math.min            }
+                    playerY = Math.max(0, Math.min(playerY, GAME_HEIGHT - PLAYER_SIZE));
+            }
         });
 
         canvas.addEventListener('mouseup', () => {
             isDragging = false;
         });
 
-        canvas.addEventListener('mouseleave', () => {
-            isDragging = false;
+        canvas.addEventListener('mouseleave', () =>            isDragging = false;
         });
 
-        hedgehogImg.onload = gameLoop;
-        hedgehogImg.onerror = gameLoop; // Start the game even if the image fails to load
+        function startGame() {
+            debug("Starting game");
+            obstacles = []; // Reset obstacles
+            score = 0;
+            gameOver = false;
+            gameLoop();
+        }
+
+        hedgehogImg.onload = () => {
+            debug("Hedgehog image loaded");
+            startGame();
+        };
+        hedgehogImg.onerror = () => {
+                       startGame(); // Start the game even if the image fails to load
+        };
+
+        // Fallback to start the game if neither onload nor onerror triggers
+        setTimeout(() => {
+                    debug("Starting game after timeout");
+                startGame();
+            }
+        }, 1000);
+
+        debug("Script loaded");
     </script>
 </body>
 </html>
