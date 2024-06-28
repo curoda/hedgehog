@@ -5,26 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hedgehog Scrolling 2D Game</title>
     <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        #gameContainer {
+            text-align: center;
+        }
         #gameCanvas {
             border: 1px solid black;
             background-color: #87CEEB;
         }
-        #debugInfo {
-            font-family: monospace;
-            white-space: pre;
+        #score {
+            font-family: Arial, sans-serif;
+            font-size: 18px;
             margin-top: 10px;
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="600" height="400"></canvas>
-    <div id="score">Score: 0</div>
-    <div id="debugInfo"></div>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="600" height="400"></canvas>
+        <div id="score">Score: 0</div>
+    </div>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreElement = document.getElementById('score');
-        const debugElement = document.getElementById('debugInfo');
 
         const GAME_WIDTH = 600;
         const GAME_HEIGHT = 400;
@@ -37,16 +48,10 @@
         let obstacles = [];
         let score = 0;
         let gameOver = false;
-        let debugInfo = '';
 
         // Load the hedgehog image
         const hedgehogImg = new Image();
         hedgehogImg.src = 'hedgehog.png'; // Placeholder image
-        
-        function updateDebugInfo(info) {
-            debugInfo += info + '\n';
-            debugElement.textContent = debugInfo;
-        }
 
         function drawPlayer() {
             if (hedgehogImg.complete) {
@@ -122,8 +127,6 @@
         }
 
         function gameLoop() {
-            updateDebugInfo('Game loop running');
-            
             if (gameOver) return;
 
             ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
@@ -145,24 +148,25 @@
         }
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowUp' && playerY > 0) {
-                playerY = Math.max(playerY - 10, 0);
-            } else if (e.key === 'ArrowDown' && playerY < GAME_HEIGHT - PLAYER_SIZE) {
-                playerY = Math.min(playerY + 10, GAME_HEIGHT - PLAYER_SIZE);
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault(); // Prevent default scrolling behavior
+                if (e.key === 'ArrowUp' && playerY > 0) {
+                    playerY = Math.max(playerY - 10, 0);
+                } else if (e.key === 'ArrowDown' && playerY < GAME_HEIGHT - PLAYER_SIZE) {
+                    playerY = Math.min(playerY + 10, GAME_HEIGHT - PLAYER_SIZE);
+                }
             }
         });
 
-        hedgehogImg.onload = () => {
-            updateDebugInfo('Hedgehog image loaded');
-            gameLoop();
-        };
+        hedgehogImg.onload = gameLoop;
+        hedgehogImg.onerror = gameLoop; // Start the game even if the image fails to load
 
-        hedgehogImg.onerror = () => {
-            updateDebugInfo('Error loading hedgehog image');
-            gameLoop(); // Start the game anyway
-        };
-
-        updateDebugInfo('Script loaded');
+        // Prevent arrow key scrolling for the entire page
+        window.addEventListener("keydown", function(e) {
+            if([32, 37, 38, 39, 40].indexOf(e.keyCode) > -1) {
+                e.preventDefault();
+            }
+        }, false);
     </script>
 </body>
 </html>
